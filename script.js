@@ -36,6 +36,9 @@ siteNav.addEventListener('click', event => {
 });
 
 const dialog = document.getElementById('course-dialog');
+const dialogInquiry = document.getElementById('dialog-inquiry');
+const inquiryType = document.querySelector('#inquiry-form [name="type"]');
+const inquiryTypeByCourse = { foundation: 'vision', consulting: 'sop' };
 document.querySelectorAll('[data-course]').forEach(button => {
   button.addEventListener('click', () => {
     const course = courses[button.dataset.course];
@@ -53,8 +56,15 @@ document.querySelectorAll('[data-course]').forEach(button => {
       list.append(item);
     });
     content.append(heading, list);
+    const selectedType = inquiryTypeByCourse[button.dataset.course];
+    dialogInquiry.hidden = !selectedType;
+    if (selectedType) dialogInquiry.dataset.inquiryType = selectedType;
     dialog.showModal();
   });
+});
+dialogInquiry.addEventListener('click', () => {
+  inquiryType.value = dialogInquiry.dataset.inquiryType;
+  dialog.close();
 });
 dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
 dialog.addEventListener('click', event => {
@@ -150,3 +160,69 @@ document.getElementById('copy-result').addEventListener('click', async () => {
 });
 
 document.getElementById('year').textContent = new Date().getFullYear();
+
+const inquiryForm = document.getElementById('inquiry-form');
+const inquiryFields = document.getElementById('inquiry-fields');
+const inquiryStatus = document.getElementById('inquiry-status');
+const configuredApiBase = document.querySelector('meta[name="vision-api-base"]').content.trim();
+let inquiryApiOrigin = '';
+
+if (configuredApiBase) {
+  try {
+    const apiUrl = new URL(configuredApiBase);
+    const localDevelopment = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const validProtocol = apiUrl.protocol === 'https:' || (localDevelopment && apiUrl.protocol === 'http:');
+    if (!validProtocol || apiUrl.pathname !== '/' || apiUrl.search || apiUrl.hash || apiUrl.username || apiUrl.password) {
+      throw new Error('Invalid API origin');
+    }
+    inquiryApiOrigin = apiUrl.origin;
+    inquiryFields.disabled = false;
+    inquiryStatus.textContent = '填写后提交，我们仅用这些信息回应本次咨询。';
+  } catch {
+    inquiryStatus.textContent = '在线咨询配置有误，暂时无法提交。';
+  }
+}
+
+inquiryForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!inquiryApiOrigin || !inquiryForm.reportValidity()) return;
+
+  const values = new FormData(inquiryForm);
+  const payload = {
+    name: String(values.get('name') || '').trim(),
+    contact: String(values.get('contact') || '').trim(),
+    company: String(values.get('company') || '').trim(),
+    type: String(values.get('type') || ''),
+    description: String(values.get('description') || '').trim(),
+    consent: values.get('consent') === 'on',
+    website: String(values.get('website') || '')
+  };
+  const submitButton = inquiryForm.querySelector('button[type="submit"]');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  submitButton.disabled = true;
+  inquiryStatus.textContent = '正在提交咨询…';
+
+  try {
+    const response = await fetch(`${inquiryApiOrigin}/api/inquiries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'omit',
+      signal: controller.signal
+    });
+    if (!response.ok) {
+      inquiryStatus.textContent = response.status === 429
+        ? '提交过于频繁，请稍后再试。填写的内容仍保留在表单中。'
+        : '提交未成功，请稍后再试。填写的内容仍保留在表单中。';
+      return;
+    }
+    inquiryForm.reset();
+    inquiryStatus.textContent = '咨询已提交。后续会通过你提供的联系方式沟通。';
+  } catch {
+    inquiryStatus.textContent = '暂时无法连接咨询服务，请稍后再试。填写的内容仍保留在表单中。';
+  } finally {
+    clearTimeout(timeout);
+    submitButton.disabled = false;
+  }
+});

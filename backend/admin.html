@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>视觉工坊｜咨询管理</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div><span class="eyebrow">VISION STUDIO</span><h1>客户咨询管理</h1></div>
+      <button id="logout" type="button" hidden>退出登录</button>
+    </header>
+
+    <form id="login-form" class="card login" autocomplete="on">
+      <h2>管理员登录</h2>
+      <label>账号<input name="username" autocomplete="username" required maxlength="40"></label>
+      <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">登录</button>
+    </form>
+
+    <section id="dashboard" hidden>
+      <div class="metrics" aria-label="咨询统计">
+        <div class="card"><span>全部</span><strong id="count-total">0</strong></div>
+        <div class="card"><span>新提交</span><strong id="count-new">0</strong></div>
+        <div class="card"><span>已联系</span><strong id="count-contacted">0</strong></div>
+        <div class="card"><span>已结束</span><strong id="count-closed">0</strong></div>
+      </div>
+      <div class="columns">
+        <section class="card" aria-labelledby="list-title">
+          <div class="section-head"><h2 id="list-title">咨询列表</h2><button id="refresh" type="button">刷新</button></div>
+          <div class="filters">
+            <label>状态<select id="filter-status"><option value="">全部</option><option value="new">新提交</option><option value="contacted">已联系</option><option value="closed">已结束</option></select></label>
+            <label>类型<select id="filter-type"><option value="">全部</option><option value="vision">视觉项目</option><option value="sop">SOP 检测</option></select></label>
+          </div>
+          <p class="muted">最多显示最近 200 条。点击条目查看详情。</p>
+          <ul id="inquiry-list" class="list"></ul>
+        </section>
+        <section class="card" aria-labelledby="detail-title">
+          <h2 id="detail-title">咨询详情</h2>
+          <p id="detail-empty" class="muted">从左侧选择一条咨询。</p>
+          <div id="detail" hidden>
+            <dl class="details">
+              <dt>联系人</dt><dd id="detail-name"></dd>
+              <dt>联系方式</dt><dd id="detail-contact"></dd>
+              <dt>公司</dt><dd id="detail-company"></dd>
+              <dt>需求类型</dt><dd id="detail-type"></dd>
+              <dt>提交时间</dt><dd id="detail-created"></dd>
+              <dt>需求描述</dt><dd id="detail-description" class="multiline"></dd>
+            </dl>
+            <form id="update-form">
+              <label>跟进状态<select name="status"><option value="new">新提交</option><option value="contacted">已联系</option><option value="closed">已结束</option></select></label>
+              <label>内部备注<textarea name="note" maxlength="4000" rows="6" placeholder="仅管理员可见"></textarea></label>
+              <button type="submit">保存跟进</button>
+            </form>
+          </div>
+        </section>
+      </div>
+    </section>
+    <p id="message" role="status" aria-live="polite"></p>
+  </main>
+</body>
+</html>
